@@ -1,7 +1,5 @@
 package org.sberbank.api.service;
 
-import io.cucumber.core.logging.Logger;
-import io.cucumber.core.logging.LoggerFactory;
 import io.qameta.allure.Allure;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -26,7 +24,6 @@ import static java.lang.String.format;
  */
 public class WeatherService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WeatherService.class);
     private final Properties properties = PropertiesReader.loadProperties("/api/api.properties");
     private final AllureDataLogger allureDataLogger = AllureDataLogger.getInstance();
 

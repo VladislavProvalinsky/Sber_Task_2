@@ -25,12 +25,12 @@ public final class AllureDataLogger {
     public Response logJsonData(Response response, Method method) {
         var lifecycle = Allure.getLifecycle();
         lifecycle.getCurrentTestCase().ifPresent(uuid -> {
-            final String step1UUID = UUID.randomUUID().toString();
-            lifecycle.startStep(step1UUID, new StepResult()
+            final String stepUUID = UUID.randomUUID().toString();
+            lifecycle.startStep(stepUUID, new StepResult()
                     .setName(String.format("Response body for %s api call:", method))
                     .setStatus(Status.PASSED));
             lifecycle.addAttachment("JSON", "application/json", "json", response.asPrettyString().getBytes());
-            lifecycle.stopStep(step1UUID);
+            lifecycle.stopStep(stepUUID);
         });
         return response.then()
                 .log()
