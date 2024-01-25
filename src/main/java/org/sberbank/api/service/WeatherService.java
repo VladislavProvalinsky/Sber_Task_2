@@ -3,14 +3,12 @@ package org.sberbank.api.service;
 import io.cucumber.core.logging.Logger;
 import io.cucumber.core.logging.LoggerFactory;
 import io.qameta.allure.Allure;
-import io.restassured.authentication.AuthenticationScheme;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.http.ContentType;
 import io.restassured.http.Method;
-import io.restassured.internal.RequestSpecificationImpl;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.sberbank.api.constants.City;
 import org.sberbank.api.model.Weather;
@@ -18,42 +16,48 @@ import org.sberbank.util.AllureDataLogger;
 import org.sberbank.util.PropertiesReader;
 
 import java.util.Properties;
-import java.util.Random;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.filter.log.LogDetail.ALL;
-import static io.restassured.filter.log.LogDetail.BODY;
-import static io.restassured.filter.log.LogDetail.METHOD;
-import static io.restassured.filter.log.LogDetail.URI;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+/**
+ * Current weather API service class implementation for /current.json endpoint
+ */
 public class WeatherService {
 
-    private static final Logger log = LoggerFactory.getLogger(WeatherService.class);
-    private static final Properties properties = PropertiesReader.loadProperties("/api/api.properties");
+    private static final Logger LOG = LoggerFactory.getLogger(WeatherService.class);
+    private final Properties properties = PropertiesReader.loadProperties("/api/api.properties");
+    private final AllureDataLogger allureDataLogger = AllureDataLogger.getInstance();
 
+    /**
+     * Base Current weather API RequestSpecification builder
+     * @return {@link RequestSpecification} instance
+     */
     private RequestSpecification getBaseWeatherSpec() {
         return new RequestSpecBuilder()
                 .setBaseUri(properties.getProperty("base.api.url"))
                 .setBasePath(properties.getProperty("weather.api.endpoint"))
-                .addQueryParam("key", properties.getProperty("base.api.key"))
                 .setContentType("application/json")
                 .addFilter(new RequestLoggingFilter(ALL))
                 .build();
     }
 
+    /**
+     * Method for getting Weather for special city
+     * @param city - {@link City} instance
+     * @return {@link Weather} deserialized instance
+     */
     public Weather getWeatherForCity(City city) {
         RequestSpecification spec = getBaseWeatherSpec();
-        var urlLogString = ((RequestSpecificationImpl) spec).getBaseUri()
-                .concat(((RequestSpecificationImpl) spec).getBasePath());
-        Allure.step(format("Execute GET Weather api call %s for city %s", city.getName(), urlLogString));
+        Allure.step(format("Execute GET Weather api call for city %s", city.getName()));
         Response response = given()
                 .spec(spec)
+                .queryParam("key", properties.getProperty("base.api.key"))
                 .queryParam("q", String.join(",", city.getLat(), city.getLon()))
                 .when()
                 .get();
-        return logResponseBodyWithTimeStampAndExtract(response, Method.GET, urlLogString)
+        return allureDataLogger.logJsonData(response, Method.GET)
                 .then()
                 .assertThat()
                 .statusCode(HttpStatus.SC_OK)
@@ -62,18 +66,77 @@ public class WeatherService {
                 .as(Weather.class);
     }
 
-    private Response logResponseBodyWithTimeStampAndExtract(Response response, Method method, String urlLogString) {
-        AllureDataLogger.logJsonData(String.format("Response body for %s api call:", method),
-                response.asPrettyString());
-        response.then()
-                .log()
-                .status()
-                .log()
-                .body();
-        long executionTime = response.getTimeIn(MILLISECONDS);
-        log.info(() -> format("Execution time for %s method %s is %d milliseconds", method, urlLogString,
-                executionTime));
-        return response;
+    /**
+     * Method for getting weather with missed 'q' parameter
+     * @return {@link Response} instance
+     */
+    public Response executeGetWithMissedQParam() {
+        RequestSpecification spec = getBaseWeatherSpec();
+        Allure.step("Execute GET Weather api call with missed 'q' parameter");
+        Response response = given()
+                .spec(spec)
+                .queryParam("key", properties.getProperty("base.api.key"))
+                .when()
+                .get();
+        return allureDataLogger.logJsonData(response, Method.GET)
+                .then()
+                .extract()
+                .response();
+    }
+
+    /**
+     * Method for getting weather with missed 'API key' parameter
+     * @return {@link Response} instance
+     */
+    public Response executeGetWithMissedApiKeyParam() {
+        RequestSpecification spec = getBaseWeatherSpec();
+        Allure.step("Execute GET Weather api call with missed API key parameter");
+        Response response = given()
+                .spec(spec)
+                .when()
+                .get();
+        return allureDataLogger.logJsonData(response, Method.GET)
+                .then()
+                .extract()
+                .response();
+    }
+
+    /**
+     * Method for getting weather with invalid API request URI
+     * @return {@link Response} instance
+     */
+    public Response executeGetWithInvalidAPIRequestURI() {
+        RequestSpecification spec = getBaseWeatherSpec();
+        Allure.step("Execute GET Weather api call with invalid API request URI");
+        Response response = given()
+                .spec(spec)
+                .basePath(properties.getProperty("weather.api.endpoint").concat("/")
+                        .concat(RandomStringUtils.randomAlphabetic(3)))
+                .when()
+                .get();
+        return allureDataLogger.logJsonData(response, Method.GET)
+                .then()
+                .extract()
+                .response();
+    }
+
+    /**
+     * Method for getting weather with invalid 'q' location parameter
+     * @return {@link Response} instance
+     */
+    public Response executeGetWithInvalidLocationParameter() {
+        RequestSpecification spec = getBaseWeatherSpec();
+        Allure.step("Execute GET Weather api call with invalid 'q' location parameter");
+        Response response = given()
+                .spec(spec)
+                .queryParam("key", properties.getProperty("base.api.key"))
+                .queryParam("q", RandomStringUtils.randomAlphabetic(10))
+                .when()
+                .get();
+        return allureDataLogger.logJsonData(response, Method.GET)
+                .then()
+                .extract()
+                .response();
     }
 
 }

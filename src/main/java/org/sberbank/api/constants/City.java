@@ -25,9 +25,4 @@ public enum City {
                 .orElseThrow(() -> new NoSuchElementException("No such city found with name: " + name));
     }
 
-    @Override
-    public String toString() {
-        return name;
-    }
-
 }

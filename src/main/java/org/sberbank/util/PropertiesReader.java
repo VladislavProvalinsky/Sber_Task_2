@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class PropertiesReader {
+public final class PropertiesReader {
 
     public static Properties loadProperties(String path) {
         Properties result = new Properties();
