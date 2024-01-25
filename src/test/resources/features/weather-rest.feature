@@ -9,7 +9,7 @@ Feature: Weather API Testing
       | city   | temperature in celsius | wind speed in kph |
       | Minsk  | 0.0                    | 19.1              |
       | Moscow | 0.0                    | 19.1              |
-      | Tokio  | 1.0                    | 13.0              |
+      | Tokyo  | 1.0                    | 13.0              |
       | London | 8.0                    | 9.0               |
     When I request the current weather for above cities and parse results
-    Then I should analyze and log the difference between actual data and expected from table above
+    Then I should analyze and log the difference between actual and expected data from table above
